@@ -8,6 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  # Configuration optionsm
-  region = var.region
+  # Configuration options
+  profile = "muaz"
+  region  = var.region
 }
