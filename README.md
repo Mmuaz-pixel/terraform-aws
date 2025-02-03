@@ -20,6 +20,20 @@ terraform apply -auto-approve
 terraform destroy -auto-approve
 ```
 
+## Other commands 
+
+- Validate the syntax 
+
+```sh
+terraform validate
+```
+
+- Check the architecture to be made by current implementation of terraform
+
+```sh
+terraform plan
+```
+
 ## Notes
-- Modify `variables.tf` or 'terraform.tfvars' for customization.
+- Modify `variables.tf` or `terraform.tfvars` for customization.
 - Adjust security groups as needed.
