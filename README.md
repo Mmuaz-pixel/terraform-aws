@@ -34,6 +34,12 @@ terraform validate
 terraform plan
 ```
 
+- Format the file 
+
+``` sh 
+terraform fmt 
+```
+
 ## Notes
 - Modify `variables.tf` or `terraform.tfvars` for customization.
 - Adjust security groups as needed.

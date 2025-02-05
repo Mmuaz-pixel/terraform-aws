@@ -78,7 +78,7 @@ resource "aws_security_group" "awssg" {
 }
 
 resource "aws_s3_bucket" "bucket" {
-  bucket = "muaz-terraform-day1"
+  bucket = var.s3_bucket_name
 }
 
 resource "aws_s3_bucket_acl" "bucket-acl" {
@@ -86,14 +86,91 @@ resource "aws_s3_bucket_acl" "bucket-acl" {
   acl    = "public-read"
 
   # ensuring these ownership controls and public access block of bucket is created before doing configuration
-  depends_on = [
-    aws_s3_bucket_ownership_controls.bucket,
-    aws_s3_bucket_public_access_block.bucket
-  ]
+
+  # needed to be debuged to check the issue
+
+  # depends_on = [
+  #   aws_s3_bucket_ownership_controls.bucket,
+  #   aws_s3_bucket_public_access_block.bucket
+  # ]
 }
 
 
 resource "aws_instance" "server1" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
+  instance_type = "t2.micro"
+  vpc_security_group_ids = [
+    aws_security_group.awssg.id
+  ]
+  subnet_id = aws_subnet.sub1.id
+  user_data = base64encode(file("ec2_user_data.sh"))
+  # we need to encode the user data as base64 for using it in aws_instance
+
 }
+resource "aws_instance" "server2" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  vpc_security_group_ids = [
+    aws_security_group.awssg.id
+  ]
+  subnet_id = aws_subnet.sub2.id
+  user_data = base64encode(file("ec2_user_data.sh"))
+
+}
+
+resource "aws_lb" "application_lb" {
+  name               = "ec2-lb"
+  internal           = false #public internet facing with public ip 
+  load_balancer_type = "application"
+  security_groups = [
+    aws_security_group.awssg.id
+  ]
+
+  subnets = [
+    aws_subnet.sub1.id,
+    aws_subnet.sub2.id
+  ]
+}
+
+resource "aws_lb_target_group" "lb_tg" {
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "instance"
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    port                = "80"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+#attachments to the target group for balancing between
+
+resource "aws_lb_target_group_attachment" "tg_attachment1" {
+  target_group_arn = aws_lb_target_group.lb_tg.arn
+  target_id        = aws_instance.server1.id
+  port             = 80
+}
+resource "aws_lb_target_group_attachment" "tg_attachment2" {
+  target_group_arn = aws_lb_target_group.lb_tg.arn
+  target_id        = aws_instance.server2.id
+  port             = 80
+}
+
+#attaching the target group to the lb
+resource "aws_lb_listener" "lb_listener" {
+  load_balancer_arn = aws_lb.application_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lb_tg.arn
+  }
+}
+

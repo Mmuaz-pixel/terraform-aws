@@ -27,3 +27,8 @@ variable "subnet2_availability_zone" {
   description = "The availability zone for the first subnet"
   default     = "us-east-1b"
 }
+
+variable "s3_bucket_name" {
+  description = "The name of the S3 bucket"
+  default     = "terraform-bucket-day1"
+}
